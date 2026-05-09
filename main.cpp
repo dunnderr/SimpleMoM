@@ -9,10 +9,10 @@ using namespace std;
 
 typedef complex<double> dcomp;
 
-const double PI = 3.141592653589793;
-const double EPS0 = 8.854e-12;
-const double OMEGA = 2.0 * PI * 14.1e6;
-const double K = OMEGA / 299792458.0;
+constexpr double PI = 3.141592653589793;
+constexpr double EPS0 = 8.854e-12;
+constexpr double OMEGA = 2.0 * PI * 14.1e6;
+constexpr double K = OMEGA / 299792458.0;
 
 struct GridData {
     int start_row;
@@ -50,7 +50,7 @@ double calc_field_magnitude(double z_obs, double y_obs, int N_seg, double dz_seg
 }
 
 void* thread_func(void* arg) {
-    GridData* d = (GridData*)arg;
+    auto d = static_cast<GridData *>(arg);
     double dz_grid = (d->z_max - d->z_min) / d->grid_size;
     double dy_grid = (d->y_max - d->y_min) / d->grid_size;
 
@@ -61,17 +61,17 @@ void* thread_func(void* arg) {
             d->field_results[i * d->grid_size + j] = calc_field_magnitude(z_obs, y_obs, d->N_segments, d->dz_seg, d->I_vec);
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 int main() {
-    const int GRID = 1000;
-    const int NUM_THREADS = 8;
+    constexpr int GRID = 1000;
+    constexpr int NUM_THREADS = 8;
 
     // Chameleon MPAS 2.0 Physical Specs
-    const double TOTAL_LENGTH = 5.55; // Meters (Whip + Extension)
-    const int N_SEG = 500;
-    const double dz_seg = TOTAL_LENGTH / N_SEG;
+    constexpr double TOTAL_LENGTH = 5.55; // Meters (Whip + Extension)
+    constexpr int N_SEG = 500;
+    constexpr double dz_seg = TOTAL_LENGTH / N_SEG;
 
     // Pre-calculate Sinusoidal Current Distribution
     vector<dcomp> I_vec(N_SEG);
@@ -82,7 +82,7 @@ int main() {
         I_vec[j] = dcomp(current_mag, 0.0);
     }
 
-    double* results = new double[GRID * GRID];
+    auto results = new double[GRID * GRID];
     pthread_t threads[NUM_THREADS];
     GridData td[NUM_THREADS];
     int rows_per_thread = GRID / NUM_THREADS;
@@ -100,10 +100,10 @@ int main() {
         td[i].dz_seg = dz_seg;
         td[i].I_vec = I_vec.data();
         td[i].field_results = results;
-        pthread_create(&threads[i], NULL, thread_func, &td[i]);
+        pthread_create(&threads[i], nullptr, thread_func, &td[i]);
     }
 
-    for (int i = 0; i < NUM_THREADS; ++i) pthread_join(threads[i], NULL);
+    for (pthread_t thread : threads) pthread_join(thread, nullptr);
 
     // Export to Binary (Fastest for 1M doubles)
     ofstream outfile("field_map.bin", ios::out | ios::binary);
