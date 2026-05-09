@@ -1,0 +1,4 @@
+cmake-build-*/
+.idea/
+.ipynb_checkpoints/
+field_map.bin
